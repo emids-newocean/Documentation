@@ -1,0 +1,68 @@
+Decisions -
+
+Jobs - Challenge and Reward jobs run at morning 1AM est. Nightly job. Usually this runs for entire user. But we can run the actual flow that gets called within the job to run for a specific case.
+
+Job Name - Challenge_Job
+
+Flow - Daily Challenge WF Job – This is the flow that gets called by the job. This is information sake.
+
+Process Challenge WF by ChallengeId - This is the flow we need to run for configuring a Challenge.
+ChallengeId -  ID of the challenge that we configured in the Portal. By configuring means – adding a new challenge or using an existing challenge and add that into the package groups.
+InputDt - Takes todays date if it is null or ignore.
+
+Challenge Duration - 4 weeks by default. 1 weeks for marketing, 2 weeks of enrollment etc.
+
+Portal –
+
+Challenge is not dependent of the package group that it is configured in the portal.
+The users associated within the package (means you have an entry in the T_UserPackageGroup table for a userid) will get the challenge based on the above configuration
+NOTE - but the package being disabled or active doesn’t impact the challenge that was configured within it as Challenges are Independent. 
+
+Steps to Create a challenge in Portal –
+Create a challenge (Group, Traditional (1 activity) and provide team details and save.
+Add the challenge to the package "Dev War Room" or any similar test package groups.
+Select the messages if message is not selected.
+Select the Schedule and then Save the package.
+
+DB –
+
+T_Challenge – This is the table that gets the challenge record when we add a new challenge in the Challenge Templates section of the Admin Portal.
+Status – 1 means active, 0 means inactive.
+NOTE - Phase column gets updated based on the dates(market, start, enrollment, Active etc.). the default values and the meaning of Phase is provided below for your understanding –
+
+--public enum ChallengePhase
+--{
+    --    Inactive = 0,
+    --    Marketing = 1,
+    --    Enrollment = 2,
+    --    Active = 3,
+    --    Complete = 4,
+    --    Final = 5,
+    --    Canceled = 6
+--}
+
+Find the challenge you configured above in the Admin Portal.
+Update the dates using Leon's query below –
+
+--UPDATE T_Challenge 
+--SET StartDt = DateAdd(day,-22,StartDt),
+--MarketingStartDt = DateAdd(day,-22,MarketingStartDt),
+--MarketingEndDt = DateAdd(day,-22,MarketingEndDt),
+--EnrollmentStartDt = DateAdd(day,-22,EnrollmentStartDt),
+--EnrollmentEndDt = DateAdd(day,-22,EnrollmentEndDt),
+--EndDt = DateAdd(day,-22,EndDt),
+--TrackingGracePeriodStartDt = DateAdd(day,-22,TrackingGracePeriodStartDt),
+--TrackingGracePeriodEndDt = DateAdd(day,-22,TrackingGracePeriodEndDt),
+--FinalRankingDt = DateAdd(day,-22,FinalRankingDt)
+--where challengeId in (578150)
+
+
+Run Decisions flow - 
+ChallengeId - take the id from above
+Date - use Marketing start date and time as 6.00 AM as that is when the challenge start is configured for a challenge by default in portal.
+
+Run the flow for each phase until the StartDt (this is also referred as Active start date) so you make the Challenge into the Active phase and then you would receive the Activity in your mobile home screen provided the userid which you used to login is configured to the package group where the challenge is configured/added.
+
+Information sake – You can run the flow with the Active Start date as many number of times to get the Challenge activity in your mobile home screen/system screen. If that helps retesting a scenario when you need to repeat testing.
+
+Information sake - Ideal scenario of simulating for every day - we have to run the flow for each date (Marketing, enroll, one day before startdt, startdt, every date until end date or end date, Graceperiodstartdate, Graceperiodenddate, Graceperiodenddate + 1) changing the date.
